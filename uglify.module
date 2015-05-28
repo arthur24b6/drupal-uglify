@@ -1,0 +1,49 @@
+<?php
+
+/**
+ * @file
+ * Provides Drupal wrapper functions for Uglification of js.
+ */
+
+
+/**
+ * Implements hook_cron().
+ */
+function uglify_cron() {
+  if (variable_get('uglify_generate_on_cron', TRUE)) {
+    $uglify = new Uglify();
+    $uglify->minifyFiles();
+  }
+}
+
+/**
+ * Implements hook_js_alter().
+ */
+function uglify_js_alter(&$javascript) {
+  if (variable_get('uglify_use_minified_js', TRUE)) {
+    $uglify = new Uglify();
+    foreach ($javascript as $id => $script) {
+      if ($script['type'] == 'file') {
+        if ($path = $uglify->getMinifiedFile($script['data'])) {
+          $javascript[$id]['data'] = $path;
+        }
+      }
+    }
+  }
+}
+
+
+/**
+ * Implements hook_drush_cache_clear().
+ */
+function uglify_drush_cache_clear(&$types) {
+  $types['uglify'] = 'uglify_cache_clear';
+}
+
+/**
+ * Utility function clear minified cache.
+ */
+function uglify_cache_clear() {
+  $uglify = new Uglify();
+  $uglify->clearMinification();
+}

@@ -1,0 +1,4 @@
+name = Uglify
+description = Provides JS minification services
+core = 7.x
+files[] = uglify.inc
