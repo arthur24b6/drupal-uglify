@@ -7,8 +7,24 @@
 
 class uglify {
 
+  /**
+   * Registered files.
+   *
+   * @var array.
+   */
   var $files = array();
 
+  /**
+   * Excluded files.
+   *
+   * @var array
+   */
+  var $excluded = array();
+
+  /**
+   * Path to the uglifyjs binary.
+   * @var string
+   */
   var $pathToUglify = FALSE;
 
   function __construct($file = FALSE) {
@@ -16,10 +32,11 @@ class uglify {
       $this->minify($file);
     }
     $this->files = variable_get('uglify_files', array());
+    $this->excluded =  variable_get('uglify_files_exclude', array());
     $this->uglifyInstalled();
   }
 
-  function uglifyInstalled() {
+  private function uglifyInstalled() {
     $uglify = variable_get('uglify_path_to_binary', "../node_modules/uglify-js/bin/uglifyjs");
     if (is_executable($uglify)) {
       $this->pathToUglfiy = $uglify;
@@ -29,12 +46,12 @@ class uglify {
   /**
    * Generates the complete list of Javascripts to minify.
    */
-  function getFileList() {
-    $exclude = variable_get('uglify_files_exclude', array());    
-    $javascripts = file_scan_directory(DRUPAL_ROOT , '/.*(?<!min)\.js$/i');
+  public function buildFileList() {
+    // @TODO exclude public://
+    $javascripts = file_scan_directory(DRUPAL_ROOT , '/.*(?<default/files)(?<!min)\.js$/i');
     foreach ($javascripts as $src => $javscript) {
-      if (empty($exclude[$src])) {
-        $ugly->fileAdd($src);
+      if (empty($this->excluded[$src])) {
+        $this->fileAdd($src);
       }
     }
   }
@@ -53,7 +70,7 @@ class uglify {
     if (empty($this->files[$src])) {
       $this->files[$src] = array(
         'src' => $src,
-        'minified' => $this->minfiedFileURI($src)
+        'minified' => $this->minfiedFileURI($src),
         'modifed' => filemtime($src)
       );
       $this->updateFiles();
@@ -74,11 +91,23 @@ class uglify {
   }
 
   /**
+   * Get the registered file array.
+   *
+   * @param string $path
+   *   Registered file array for this path.
+   */
+  private function getRegisteredFile($path) {
+    if (!empty($this->files[$path])) {
+      return $this->files[$path];
+    }
+  }
+
+  /**
    * Should this file be minifed?
    */
   public function shouldUpdate($src, $force = FALSE) {
     if ($force) {
-      return TRUE:
+      return TRUE;
     }
     elseif (empty($this->files[$src])) {
       return TRUE;
@@ -104,15 +133,6 @@ class uglify {
   }
 
   /**
-   * Minify all files that are being tracked.
-   */
-  public function minifyFiles($force = FALSE) {
-    foreach ($this->files as $src => $file) {
-      $this->minify($src, $force);
-    }
-  }
-
-  /**
    * @param string $src
    *   System file path or URI.
    * @param string $output_file
@@ -128,7 +148,19 @@ class uglify {
     file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
     $command = $this->pathToUglfiy . " $src -o $output_file";
     if (exec($command)) {
+      if (empty($this->files[$src])) {
+        $this->addFile($src);
+      }
       return $output_file;
+    }
+  }
+
+  /**
+   * Minify all files that are being tracked.
+   */
+  public function minifyFiles($force = FALSE) {
+    foreach ($this->files as $item) {
+      $this->minifyFile($item['src'], $force);
     }
   }
 
@@ -151,16 +183,84 @@ class uglify {
     return $output_file;
   }
 
-  public function getMinifiedFile($src) {
-    $path = $this->minfiedFileURI($src);
-    if (file_exists($path)) {
-      return $path;
+  /**
+   * Get the minified file path for the source file.
+   *
+   * @param string $src
+   *   Path to the source file.
+   *
+   * @return string
+   *   URI to minified file.
+   */
+  public function getMinified($src) {
+    if (!empty($this->files[$src])) {
+      if (file_exists($this->files['soruce']['minified'])) {
+        return $this->files['soruce']['minified'];
+      }
     }
-    // Add this file for generation.
-    elseif (empty($this->files[$src])) {
-      $this->addFile($src);
+    return FALSE;
+  }
+
+  /**
+   * Delete a minified URI.
+   *
+   * @param string $uri
+   *   Path to the minified file to delete.
+   */
+  public function deleteMinified($uri) {
+    file_unmanaged_delete($uri);
+  }
+
+  /**
+   * Purge a file from the minfied files and the internal data store.
+   *
+   * @param mixed $item
+   *   Registered file uri.
+   */
+  public function purgeFile($item) {
+    if (!is_array($item) && ! $item = $this->getRegisteredFile($item)) {
+      return FALSE;
+    }
+    $this->deleteMinified($item['minified']);
+    unset($this->files[$item['src']]);
+    $this->updateFiles();
+  }
+
+  /**
+   * Purge all registered files.
+   */
+  public function purgeFiles() {
+    foreach ($this->files as $item) {
+      $this->purgeFile($item);
     }
   }
+
+  /**
+   * Delete the minified file and unregister it.
+   *
+   * @param mixed $item
+   *   Array or path to source file.
+   */
+  public function uncacheFile($item) {
+    if (is_string($item)){
+      if (! $item = $this->getRegisteredFile($item)) {
+        return FALSE;
+      }
+    }
+    $this->deleteMinified($item['minified']);
+    $this->files[$item['src']]['modified'] = 0;
+    $this->updateFiles();
+  }
+
+  /**
+   * Uncache all registered files.
+   */
+  public function uncacheFiles() {
+    foreach ($this->files as $item) {
+      $this->uncacheFile($item);
+    }
+  }
+
 
   /**
    * Attempts to find a file header and insert it into the minified file.
@@ -176,8 +276,5 @@ class uglify {
 // Anything in sites/all/libraries should be checked
 // Check everything in sites/all/modules/custom
   }
-
-
-
 
 }
