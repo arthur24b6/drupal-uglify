@@ -1,0 +1,24 @@
+<?php
+
+/**
+ * @file
+ * Provides install functions for uglify.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function uglify_requirements($phase) {
+
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function uglify_unistall() {
+	variable_del('uglify_use_minified_js');
+	variable_del('uglify_generate_on_cron');
+	variable_del('uglify_path_to_binary');
+	variable_del('uglify_output_directory');
+	variable_del('uglify_files');
+}

@@ -37,8 +37,24 @@ function drush_uglify() {
  */
 function drush_uglify_list() {
   $ugly = new Uglify();
+  $force = FALSE;
+  $ugly->getFileList();
+  $ugly->minifyFiles($force);
+}
+
+
+  print_r($javascripts);
+
+  return;
+
   drush_print('Javascript files that have been registered:');
   foreach ($ugly->files as $file) {
     drush_print($file);
   }
 }
+
+
+/** Regenerate
+* scan all files
+* compare each file mod time with what is stored
+* if time > stored, minfy
