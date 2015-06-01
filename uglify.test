@@ -1,0 +1,45 @@
+<?php
+
+/**
+ * Tests the functionality of the Simpletest example content type.
+ */
+class UglifyTest extends DrupalWebTestCase {
+
+  public static function getInfo() {
+    // parent::setUp(array('uglify'));
+    return array(
+      'name' => 'Uglify Test',
+      'description' => 'Uglification is working properly.',
+      'group' => 'Uglify',
+    );
+  }
+
+  /**
+   * Force the use of the current database and environment.
+   */
+  function setUp() {
+    $this->setup = TRUE;
+  }
+
+  /**
+   * End testing.
+   *
+   * This overrides the base class preventing the database from being deleted.
+   */
+  function tearDown() {
+  }
+
+  function testUglify() {
+    $message = "Scans complete file system";
+    $message = "Excludes files directory";
+    $message = "Excludes specified file";
+    $message = "Excludes specified directory";
+    $message = "Registers single file";
+    $message = "Minfies one file";
+    $message = "Minfies all registered files";
+    $message = "Purges all files.";
+    $message = "Purges one file.";
+
+  }
+}
+
