@@ -29,3 +29,5 @@ You can see what files are in the minification registry with:
 
 * Ensure that the path to uglifyjs is valid
 * Licensing concerns. This is a big one.
+* Tests
+* Individual file updates to the registry

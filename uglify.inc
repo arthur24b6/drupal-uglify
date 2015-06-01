@@ -15,7 +15,7 @@ class uglify {
   var $files = array();
 
   /**
-   * Excluded files with these regexs.
+   * Excluded files with these paths.
    *
    * @var array
    */
@@ -23,22 +23,22 @@ class uglify {
 
   /**
    * Path to the uglifyjs binary.
+   *
    * @var string
    */
   var $pathToUglify = FALSE;
 
-  function __construct($file = FALSE) {
-    if ($file) {
-      $this->minify($file);
-    }
+  function __construct() {
+
     $this->files = variable_get('uglify_files', array());
 
-    $excluded = array(
-      DRUPAL_ROOT . '/' . variable_get('file_public_path'),
-      DRUPAL_ROOT . '/' . variable_get('file_private_path'),
-      DRUPAL_ROOT . '/' . variable_get('file_temporary_path'),
+    $this->excluded = array(
+      variable_get('file_public_path'),
+      variable_get('file_private_path'),
+      variable_get('file_temporary_path'),
+      'sites/all/libraries/'
     );
-    $this->excluded = array_merge(variable_get('uglify_files_exclude', array()), $excluded);
+    $this->excluded = array_merge(variable_get('uglify_files_exclude', array()), $this->excluded);
 
     $this->uglifyInstalled();
   }
@@ -56,6 +56,8 @@ class uglify {
   public function buildFileList() {
     $javascripts = file_scan_directory(DRUPAL_ROOT , '/.*(?<!min)\.js$/i');
     foreach ($javascripts as $src => $javscript) {
+      // File path is relative to the Drupal root.
+      $src = str_replace(DRUPAL_ROOT . '/', '', $src);
       if (!$this->isExcluded($src)) {
         $this->fileRegister($src);
       }
@@ -84,19 +86,6 @@ class uglify {
   }
 
   /**
-   * Utility function to remove files from the internal store.
-   */
-  public function fileDelete($src) {
-    if (!empty($this->files[$src])) {
-      if (file_exists($this->files[$src]['minified'])) {
-        file_unmanaged_delete($this->files[$src]['minified']);
-      }
-      unset($this->files[$src]);
-      $this->updateFiles();
-    }
-  }
-
-  /**
    * Should a file be included in the registry?
    */
   public function isExcluded($src) {
@@ -110,12 +99,12 @@ class uglify {
   /**
    * Get the registered file array.
    *
-   * @param string $path
+   * @param string $src
    *   Registered file array for this path.
    */
-  private function getRegisteredFile($path) {
-    if (!empty($this->files[$path])) {
-      return $this->files[$path];
+  private function getRegisteredFile($src) {
+    if (!empty($this->files[$src])) {
+      return $this->files[$src];
     }
   }
 
@@ -135,34 +124,20 @@ class uglify {
   }
 
   /**
-   * Minify a file.
+   * Perform the file minification.
    *
-   * @param string $src
-   *   Path to the source file.
-   * @param bool $force
-   *   Optional, re-minify the file regardless.
-   */
-  public function minify($src, $force = FALSE) {
-    if ($this->shouldUpdate($src, $force)) {
-      $this->fileRegister($src);
-      $this->minifyFile($src);
-    }
-  }
-
-  /**
    * @param string $src
    *   System file path or URI.
    * @param string $output_file
    *   Optional, URI to put the completed file.
    *
    * @return mixed
-   *   URI to the output file or false.
+   *   URI to the output file or FALSE.
    */
-  public function minifyFile($src, $output_file = FALSE) {
-    $output_file =  drupal_realpath($this->minfiedFileURI($src, $output_file));
+  public function minifyFile($src) {
+    $output_file =  drupal_realpath($this->minfiedFileURI($src));
     // Ensure that the minfied directory exists- required for drupal_realpath() to work.
     $directory = dirname($this->minfiedFileURI($src, $output_file));
-    drush_print("Minifying: $output_file");
     if (!file_prepare_directory($directory, FILE_CREATE_DIRECTORY)) {
       watchdog('uglify', "Could not create directory $directory", array(), WATCHDOG_ERROR);
       return FALSE;
@@ -194,18 +169,13 @@ class uglify {
    *
    * @param string $src
    *   Path to file.
-   * @param string $output_file
-   *   Optional, if present is returned with no modifications.
    *
    * @return string
    *   URI to minified file
    */
-  public function minfiedFileURI($src, $output_file = FALSE) {
-    if (!$output_file) {
-      $minified = preg_replace('/(.*)\.js$/', '$1.min.js', $src);
-      $output_file = variable_get('uglify_output_directory', 'public://uglifyjs/') . basename($minified);
-    }
-    return $output_file;
+  public function minfiedFileURI($src) {
+    $minified = preg_replace('/(.*)\.js$/', '$1.min.js', $src);
+    return variable_get('uglify_output_directory', 'public://uglifyjs/') . basename($minified);
   }
 
   /**
@@ -219,8 +189,8 @@ class uglify {
    */
   public function getMinified($src) {
     if (!empty($this->files[$src])) {
-      if (file_exists($this->files['soruce']['minified'])) {
-        return $this->files['soruce']['minified'];
+      if (file_exists($this->files[$src]['minified'])) {
+        return $this->files[$src]['minified'];
       }
     }
     return FALSE;
