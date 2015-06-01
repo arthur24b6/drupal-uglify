@@ -15,7 +15,7 @@ class uglify {
   var $files = array();
 
   /**
-   * Excluded files.
+   * Excluded files with these regexs.
    *
    * @var array
    */
@@ -32,7 +32,14 @@ class uglify {
       $this->minify($file);
     }
     $this->files = variable_get('uglify_files', array());
-    $this->excluded =  variable_get('uglify_files_exclude', array());
+
+    $excluded = array(
+      DRUPAL_ROOT . '/' . variable_get('file_public_path'),
+      DRUPAL_ROOT . '/' . variable_get('file_private_path'),
+      DRUPAL_ROOT . '/' . variable_get('file_temporary_path'),
+    );
+    $this->excluded = array_merge(variable_get('uglify_files_exclude', array()), $excluded);
+
     $this->uglifyInstalled();
   }
 
@@ -47,11 +54,10 @@ class uglify {
    * Generates the complete list of Javascripts to minify.
    */
   public function buildFileList() {
-    // @TODO exclude public://
-    $javascripts = file_scan_directory(DRUPAL_ROOT , '/.*(?<default/files)(?<!min)\.js$/i');
+    $javascripts = file_scan_directory(DRUPAL_ROOT , '/.*(?<!min)\.js$/i');
     foreach ($javascripts as $src => $javscript) {
-      if (empty($this->excluded[$src])) {
-        $this->fileAdd($src);
+      if (!$this->isExcluded($src)) {
+        $this->fileRegister($src);
       }
     }
   }
@@ -66,7 +72,7 @@ class uglify {
   /**
    * Utility function to add files to the internal store.
    */
-  public function fileAdd($src) {
+  public function fileRegister($src) {
     if (empty($this->files[$src])) {
       $this->files[$src] = array(
         'src' => $src,
@@ -87,6 +93,17 @@ class uglify {
       }
       unset($this->files[$src]);
       $this->updateFiles();
+    }
+  }
+
+  /**
+   * Should a file be included in the registry?
+   */
+  public function isExcluded($src) {
+    foreach ($this->excluded as $exclude) {
+      if (strstr($src, $exclude)) {
+        return TRUE;
+      }
     }
   }
 
@@ -127,7 +144,7 @@ class uglify {
    */
   public function minify($src, $force = FALSE) {
     if ($this->shouldUpdate($src, $force)) {
-      $this->fileAdd($src);
+      $this->fileRegister($src);
       $this->minifyFile($src);
     }
   }
@@ -145,13 +162,21 @@ class uglify {
     $output_file =  drupal_realpath($this->minfiedFileURI($src, $output_file));
     // Ensure that the minfied directory exists- required for drupal_realpath() to work.
     $directory = dirname($this->minfiedFileURI($src, $output_file));
-    file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
+    drush_print("Minifying: $output_file");
+    if (!file_prepare_directory($directory, FILE_CREATE_DIRECTORY)) {
+      watchdog('uglify', "Could not create directory $directory", array(), WATCHDOG_ERROR);
+      return FALSE;
+    }
     $command = $this->pathToUglfiy . " $src -o $output_file";
-    if (exec($command)) {
+    exec($command, $return, $status);
+    if (!$status) {
       if (empty($this->files[$src])) {
         $this->addFile($src);
       }
       return $output_file;
+    }
+    else {
+      watchdog('uglify', "Could not execute: $command", array(), WATCHDOG_ERROR);
     }
   }
 

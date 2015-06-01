@@ -21,7 +21,7 @@ You can see what files are in the minification registry with:
 ## Configuration
 
 * ```$conf['uglify_use_minified_js']``` Defaults to true. Enables the use of minified files if present. Use this to disable minification during development for example.
-* ```$conf['uglify_files_exclude']``` Add regex patterns or absolute file paths to exclude files from the minified registry. Drupal's public, private, and temporary directoreis are always excluded.
+* ```$conf['uglify_files_exclude']``` Absolute file paths or directories to exclude files from the minified registry. Drupal's public, private, and temporary directories are always excluded.
 * ```$conf['uglify_path_to_binary']``` Path to uglifyjs. Defaults to the directory above the project root.
 * ```$conf['uglify_output_directory']``` Defaults to public://uglifyjs. Where the minified files are stored.
 

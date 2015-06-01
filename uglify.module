@@ -13,7 +13,7 @@ function uglify_js_alter(&$javascript) {
     $uglify = new Uglify();
     foreach ($javascript as $id => $script) {
       if ($script['type'] == 'file') {
-        if ($path = $uglify->getMinifiedFile($script['data'])) {
+        if ($path = $uglify->getMinified($script['data'])) {
           $javascript[$id]['data'] = $path;
         }
       }
