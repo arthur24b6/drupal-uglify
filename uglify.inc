@@ -36,7 +36,6 @@ class uglify {
       variable_get('file_public_path'),
       variable_get('file_private_path'),
       variable_get('file_temporary_path'),
-      'sites/all/libraries/'
     );
     $this->excluded = array_merge(variable_get('uglify_files_exclude', array()), $this->excluded);
 
@@ -142,7 +141,7 @@ class uglify {
       watchdog('uglify', "Could not create directory $directory", array(), WATCHDOG_ERROR);
       return FALSE;
     }
-    $command = $this->pathToUglfiy . " $src -o $output_file";
+    $command = $this->pathToUglfiy . " $src -o $output_file --comments all";
     exec($command, $return, $status);
     if (!$status) {
       if (empty($this->files[$src])) {
