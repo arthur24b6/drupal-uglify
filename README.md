@@ -1,26 +1,31 @@
 # Uglify JS Minification
 
+## About
+
+Provides minification services for Drupal.
+
 ## Requirements
 
 * [uglifyjs2](https://github.com/mishoo/UglifyJS2)
 
 ## Usage
 
-Enable the module. Browse the Drupal site to collect the in use javascript files. Minified files will be generated on cron runs. The minified files will replace the non-minified ones non-destructively.
+Enable the module. Build the minification registry and minify all javascript files by doing:
+```drush uglify --build```
 
-* ```drush uglify``` will generate minified files from the known javascript files.
-* ```drush uglify-list``` will list all files that uglify currently knows about to minify.
+Once the registry is build and files are minified, Drupal will automatically replace registered javascript files with their minified subsitute.
+
+You can see what files are in the minification registry with:
+```drush uglify-list```
 
 ## Configuration
 
 * ```$conf['uglify_use_minified_js']``` Defaults to true. Enables the use of minified files if present. Use this to disable minification during development for example.
-* ```$conf['uglify_generate_on_cron']``` Defaults to true. Generates the minified files on Drupal cron runs.
+* ```$conf['uglify_files_exclude']``` Add regex patterns or absolute file paths to exclude files from the minified registry. Drupal's public, private, and temporary directoreis are always excluded.
 * ```$conf['uglify_path_to_binary']``` Path to uglifyjs. Defaults to the directory above the project root.
 * ```$conf['uglify_output_directory']``` Defaults to public://uglifyjs. Where the minified files are stored.
 
 ## Todo
 
 * Ensure that the path to uglifyjs is valid
-* Licensing concerns.
-* Provide a way to identify some files as not minifyiable.
-* Scan for javascript files in /misc and /sites/all/modules
+* Licensing concerns. This is a big one.
