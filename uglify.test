@@ -6,7 +6,6 @@
 class UglifyTest extends DrupalWebTestCase {
 
   public static function getInfo() {
-    // parent::setUp(array('uglify'));
     return array(
       'name' => 'Uglify Test',
       'description' => 'Uglification is working properly.',
@@ -18,7 +17,9 @@ class UglifyTest extends DrupalWebTestCase {
    * Force the use of the current database and environment.
    */
   function setUp() {
-    $this->setup = TRUE;
+    // $this->setup = TRUE;
+    parent::setUp(array('uglify', 'file'));
+    $this->testJSFile = drupal_get_path('module', 'uglify') . '/uglify-test.js';
   }
 
   /**
@@ -26,19 +27,55 @@ class UglifyTest extends DrupalWebTestCase {
    *
    * This overrides the base class preventing the database from being deleted.
    */
-  function tearDown() {
-  }
+  //function tearDown() {
+  //}
+
 
   function testUglify() {
-    $message = "Scans complete file system";
-    $message = "Excludes files directory";
+    $ugly = new uglify();
+
+    $message = "Scans file system";
+    $ugly->buildFileList();
+    $this->assertTrue($ugly->files, $message);
+
+    $message = "Test JS file is in registry";
+    $this->assertTrue($ugly->files[$this->testJSFile], $message);
+
+    $message = "Excludes all files in the public files directory";
+    $path = drupal_realpath('public://');
+    $test = TRUE;
+    foreach ($ugly->files as $src => $item) {
+      if (strstr($src, $path)) {
+        $test = FALSE;
+      }
+    }
+    $this->assertTrue($test, $message);
+
     $message = "Excludes specified file";
-    $message = "Excludes specified directory";
+    $ugly->excludeFile($this->testJSFile);
+    $ugly->buildFileList();
+    $this->assertTrue(empty($ugly->files[$this->testJSFile]), $message);
+
     $message = "Registers single file";
+    $ugly->registerFile($this->testJSFile);
+    $this->assertTrue(!empty($ugly->files[$this->testJSFile]), $message);
+
     $message = "Minfies one file";
-    $message = "Minfies all registered files";
-    $message = "Purges all files.";
+    $src = drupal_get_path('module', 'uglify') . '/uglify-test.js';
+    $ugly->minifyFile($this->testJSFile);
+    $path = $ugly->minfiedFileURI($this->testJSFile);
+    $this->assertTrue(file_exists($path), $message);
+
     $message = "Purges one file.";
+    $ugly->purgeFile($this->testJSFile);
+    $this->assertTrue(empty($ugly->files[$this->testJSFile]), $message);
+
+    $message = "Purged file is deleted";
+    $path = $ugly->minfiedFileURI($this->testJSFile);
+    $this->assertTrue(!file_exists($path), $message);
+
+    $message = "Purges all files.";
+
 
   }
 }

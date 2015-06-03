@@ -43,7 +43,7 @@ class uglify {
   }
 
   private function uglifyInstalled() {
-    $uglify = variable_get('uglify_path_to_binary', "../node_modules/uglify-js/bin/uglifyjs");
+    $uglify = variable_get('uglify_path_to_binary', "/var/www/sites/test.dev/node_modules/uglify-js/bin/uglifyjs");
     if (is_executable($uglify)) {
       $this->pathToUglfiy = $uglify;
     }
@@ -58,7 +58,7 @@ class uglify {
       // File path is relative to the Drupal root.
       $src = str_replace(DRUPAL_ROOT . '/', '', $src);
       if (!$this->isExcluded($src)) {
-        $this->fileRegister($src);
+        $this->registerFile($src);
       }
     }
   }
@@ -73,7 +73,7 @@ class uglify {
   /**
    * Utility function to add files to the internal store.
    */
-  public function fileRegister($src) {
+  public function registerFile($src) {
     if (empty($this->files[$src])) {
       $this->files[$src] = array(
         'src' => $src,
@@ -134,7 +134,10 @@ class uglify {
    *   URI to the output file or FALSE.
    */
   public function minifyFile($src) {
-    $output_file =  drupal_realpath($this->minfiedFileURI($src));
+    drush_print($src);
+    $output_file = drupal_realpath($this->minfiedFileURI($src));
+    drush_print($this->minfiedFileURI($src));
+    drush_print($output_file);
     // Ensure that the minfied directory exists- required for drupal_realpath() to work.
     $directory = dirname($this->minfiedFileURI($src, $output_file));
     if (!file_prepare_directory($directory, FILE_CREATE_DIRECTORY)) {
@@ -142,6 +145,8 @@ class uglify {
       return FALSE;
     }
     $command = $this->pathToUglfiy . " $src -o $output_file --comments all";
+    drush_print ($command);
+    drush_print (DRUPAL_ROOT);
     exec($command, $return, $status);
     if (!$status) {
       if (empty($this->files[$src])) {
@@ -174,7 +179,7 @@ class uglify {
    */
   public function minfiedFileURI($src) {
     $minified = preg_replace('/(.*)\.js$/', '$1.min.js', $src);
-    return variable_get('uglify_output_directory', 'public://uglifyjs/') . basename($minified);
+    return variable_get('uglify_output_directory', "public://uglifyjs/") . "$minified";
   }
 
   /**
@@ -255,20 +260,23 @@ class uglify {
     }
   }
 
-
   /**
-   * Attempts to find a file header and insert it into the minified file.
+   * Exclude a file or path from the registry.
    *
-   * @param string $file
-   *   URI to file to be minified.
-   *
-   * @return string
-   *   Licence text if found.
+   * @param string $src
+   *   File path or directory path to exclude.
    */
-  public function findLicence($file) {
-// Probably can ignore anything in sites/all/modules/contrib
-// Anything in sites/all/libraries should be checked
-// Check everything in sites/all/modules/custom
+  public function excludeFile($src) {
+    if (empty($this->excluded[$src])) {
+      $this->excluded[] = $src;
+      variable_set('uglify_files_exclude', $this->excluded);
+    }
+    // Remove any matches from the registry.
+    foreach ($this->files as $path => $item) {
+      if ($this->isExcluded($src)) {
+        $this->purgeFile($item);
+      }
+    }
   }
 
 }
