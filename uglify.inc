@@ -37,7 +37,7 @@ class uglify {
       variable_get('file_private_path'),
       variable_get('file_temporary_path'),
     );
-    $this->excluded = array_merge(variable_get('uglify_files_exclude', array()), $this->excluded);
+    $this->excluded = array_unique(array_merge(variable_get('uglify_files_exclude', array()), $this->excluded));
 
     $this->uglifyInstalled();
   }
@@ -134,19 +134,17 @@ class uglify {
    *   URI to the output file or FALSE.
    */
   public function minifyFile($src) {
-    drush_print($src);
-    $output_file = drupal_realpath($this->minfiedFileURI($src));
-    drush_print($this->minfiedFileURI($src));
-    drush_print($output_file);
+    $uri = $this->minfiedFileURI($src);
+    $directory = dirname($uri);
     // Ensure that the minfied directory exists- required for drupal_realpath() to work.
-    $directory = dirname($this->minfiedFileURI($src, $output_file));
     if (!file_prepare_directory($directory, FILE_CREATE_DIRECTORY)) {
       watchdog('uglify', "Could not create directory $directory", array(), WATCHDOG_ERROR);
       return FALSE;
     }
-    $command = $this->pathToUglfiy . " $src -o $output_file --comments all";
-    drush_print ($command);
-    drush_print (DRUPAL_ROOT);
+
+    $output_file = drupal_realpath($uri);
+    $command = $this->pathToUglfiy . " $src -o $output_file " . variable_get('uglify_comments', '--comments all');
+
     exec($command, $return, $status);
     if (!$status) {
       if (empty($this->files[$src])) {
@@ -267,7 +265,7 @@ class uglify {
    *   File path or directory path to exclude.
    */
   public function excludeFile($src) {
-    if (empty($this->excluded[$src])) {
+    if (!in_array($src, $this->excluded)) {
       $this->excluded[] = $src;
       variable_set('uglify_files_exclude', $this->excluded);
     }
@@ -276,6 +274,19 @@ class uglify {
       if ($this->isExcluded($src)) {
         $this->purgeFile($item);
       }
+    }
+  }
+
+  /**
+   * Remove a file from being excluded.
+   *
+   * @param string $src
+   *   File path or directory path to exclude.
+   */
+  public function unExcludeFile($src) {
+    if ($key = array_search($src, $this->excluded)) {
+      unset($this->excluded[$key]);
+      variable_set('uglify_files_exclude', $this->excluded);
     }
   }
 

@@ -17,19 +17,9 @@ class UglifyTest extends DrupalWebTestCase {
    * Force the use of the current database and environment.
    */
   function setUp() {
-    // $this->setup = TRUE;
     parent::setUp(array('uglify', 'file'));
     $this->testJSFile = drupal_get_path('module', 'uglify') . '/uglify-test.js';
   }
-
-  /**
-   * End testing.
-   *
-   * This overrides the base class preventing the database from being deleted.
-   */
-  //function tearDown() {
-  //}
-
 
   function testUglify() {
     $ugly = new uglify();
@@ -39,7 +29,7 @@ class UglifyTest extends DrupalWebTestCase {
     $this->assertTrue($ugly->files, $message);
 
     $message = "Test JS file is in registry";
-    $this->assertTrue($ugly->files[$this->testJSFile], $message);
+    $this->assertTrue(!empty($ugly->files[$this->testJSFile]), $message);
 
     $message = "Excludes all files in the public files directory";
     $path = drupal_realpath('public://');
@@ -55,6 +45,10 @@ class UglifyTest extends DrupalWebTestCase {
     $ugly->excludeFile($this->testJSFile);
     $ugly->buildFileList();
     $this->assertTrue(empty($ugly->files[$this->testJSFile]), $message);
+
+    $message = "File can be unexcluded";
+    $ugly->unExcludeFile($this->testJSFile);
+    $this->assertTrue(empty($ugly->excluded[$this->testJSFile]), $message);
 
     $message = "Registers single file";
     $ugly->registerFile($this->testJSFile);
@@ -75,8 +69,6 @@ class UglifyTest extends DrupalWebTestCase {
     $this->assertTrue(!file_exists($path), $message);
 
     $message = "Purges all files.";
-
-
   }
 }
 
