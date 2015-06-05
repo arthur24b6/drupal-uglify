@@ -48,7 +48,7 @@ class uglify {
    * Check to see if uglify is correctly installed.
    */
   private function uglifyInstalled() {
-    $uglify = variable_get('uglify_path_to_binary', "/var/www/sites/test.dev/node_modules/uglify-js/bin/uglifyjs");
+    $uglify = variable_get('uglify_path_to_binary', DRUPAL_ROOT . "/../node_modules/uglify-js/bin/uglifyjs");
     if (is_executable($uglify)) {
       $this->pathToUglfiy = $uglify;
     }
