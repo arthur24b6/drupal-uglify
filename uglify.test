@@ -18,8 +18,11 @@ class UglifyTest extends DrupalWebTestCase {
    */
   function setUp() {
     parent::setUp(array('uglify', 'file'));
+    //$this->setup = TRUE;
     $this->testJSFile = drupal_get_path('module', 'uglify') . '/uglify-test.js';
   }
+
+  //function tearDown() {}
 
   function testUglify() {
     $ugly = new uglify();
@@ -68,7 +71,36 @@ class UglifyTest extends DrupalWebTestCase {
     $path = $ugly->minfiedFileURI($this->testJSFile);
     $this->assertTrue(!file_exists($path), $message);
 
-    $message = "Purges all files.";
+    $message = "Registers a directory of files";
+    $ugly->buildFileList(drupal_get_path('module', 'uglify'));
+    $this->assertTrue(!empty($ugly->files[$this->testJSFile]), $message);
+
+    $message = "Minfies registered files";
+    $ugly->minifyFiles();
+    $path = $ugly->minfiedFileURI($this->testJSFile);
+    $this->assertTrue(file_exists($path), $message);
+
+    $message = "Purge file: ";
+    $files = $ugly->files;
+    $ugly->purgeFiles();
+    $test = TRUE;
+    foreach ($files as $item) {
+      if (file_exists($item['minified'])) {
+        $test = FALSE;
+      }
+      $this->assertTrue(!file_exists($item['minified']), $message . $item['minified']);
+    }
+
+    $message = "Purges all files";
+    $this->assertTrue($test, $message);
+
+    $message = "Datestamp on a file prevents minification";
+    $ugly->registerFile($this->testJSFile);
+    $ugly->minifyFiles();
+
+    $ugly->purgeFiles();
+
   }
+
 }
 

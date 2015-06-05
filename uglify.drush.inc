@@ -12,30 +12,28 @@ function uglify_drush_command() {
   $items['uglify'] = array(
     'description' => 'Generate minfied JS files from registered files.',
     'examples' => array(
-      'drush uglify' => 'Minfies all registered JS files.',
+      'drush uglify' => 'Minfies all registered JS files. Assumes that the registry has already been built.',
       'drush uglify --file=misc/jquery.js' => 'Minfies the jquery file.',
-      'drush uglify --force' => 'Regenates all minified files regardless of modified date',
-      'drush uglify --build' => 'Find and register all javascript files and then build. '
+      'drush uglify --register --files=misc' => 'Register and minify found files. Can be used in conjunction with --files. In this example it will only register files found in the misc directory. By default the entire Drupal root is scanned.',
     ),
     'options' => array(
-      'file' => 'Provide a specific file path to minify.',
-      'build' => 'Build list of Javascript files to minify and then minify.'
+      'file' => 'Provide a specific file path to register and minify the file.',
+      'files' => 'Provide a path to a directory to register and minify files.',
+      'register' => 'Register found files',
     )
   );
   $items['uglify-purge'] = array(
-    'description' => 'Delete and unregister all files created by uglify.
-      Generally you want to use uglify-uncache, however this can be handy when a
-      file is throwing errors due to minification or other instances.',
+    'description' => 'Delete and unregister all files created by uglify.',
     'examples' => array(
       'drush uglify-purge' => 'Removes all files.',
       'drush uglify-purge --file=misc/jquery.js' => 'Purges the minfied jquery file.',
     ),
     'options' => array(
-      'file' => 'Provide a specific file path to minify'
+      'file' => 'Provide a specific file path to purge.'
     )
   );
   $items['uglify-uncache'] = array(
-    'description' => 'Delete all registered minified files. Allows for files to be rebuilt.',
+    'description' => 'Delete all registered minified files but maintains the file in the registry.',
     'examples' => array(
       'drush uglify-uncache' => 'Removes all files.',
       'drush uglify-uncache --file=misc/jquery.js' => 'Remvoves the minfied jquery file.',
@@ -45,7 +43,7 @@ function uglify_drush_command() {
     )
   );
   $items['uglify-list'] = array(
-    'description' => 'List all files that can be minfied.',
+    'description' => 'List all files in the registry.',
     'options' => array(
       'excluded' => 'Show excluded files',
     ),
@@ -62,16 +60,14 @@ function uglify_drush_command() {
  */
 function drush_uglify() {
   $ugly = new Uglify();
-  $force = drush_get_option('force', FALSE);
-  if ($file = drush_get_option('file', FALSE)) {
-    $ugly->minifyFile($file, $force);
+  if ($file = drush_get_options('file', FALSE)) {
+    $ugly->minifyFile($file);
+    return;
   }
-  else {
-    if (drush_get_option('build', FALSE)) {
-      $ugly->buildFileList();
-    }
-    $ugly->minifyFiles($force);
+  if (drush_get_options('register', FALSE)) {
+    $ugly->buildFileList(drush_get_options('files', FALSE));
   }
+  $ugly->minifyFiles();
 }
 
 /**

@@ -3,6 +3,8 @@
 /**
  * @file
  * Provides the uglify class.
+ *
+ * @TODO this needs to do better handling if uglify isn't present.
  */
 
 class uglify {
@@ -42,6 +44,9 @@ class uglify {
     $this->uglifyInstalled();
   }
 
+  /**
+   * Check to see if uglify is correctly installed.
+   */
   private function uglifyInstalled() {
     $uglify = variable_get('uglify_path_to_binary', "/var/www/sites/test.dev/node_modules/uglify-js/bin/uglifyjs");
     if (is_executable($uglify)) {
@@ -51,9 +56,15 @@ class uglify {
 
   /**
    * Generates the complete list of Javascripts to minify.
+   *
+   * @pram string $path
+   *   Optional, register the files from a path relative to the DRUPAL_ROOT.
    */
-  public function buildFileList() {
-    $javascripts = file_scan_directory(DRUPAL_ROOT , '/.*(?<!min)\.js$/i');
+  public function buildFileList($path = FALSE) {
+    // Dump the current registry.
+    $this->purgeFiles();
+    $path = DRUPAL_ROOT . ($path ? "/$path" : '');
+    $javascripts = file_scan_directory($path, '/.*(?<!min)\.js$/i');
     foreach ($javascripts as $src => $javscript) {
       // File path is relative to the Drupal root.
       $src = str_replace(DRUPAL_ROOT . '/', '', $src);
@@ -127,13 +138,13 @@ class uglify {
    *
    * @param string $src
    *   System file path or URI.
-   * @param string $output_file
-   *   Optional, URI to put the completed file.
+   * @param bool $add
+   *   Optional, should the file be added to the registry.
    *
    * @return mixed
    *   URI to the output file or FALSE.
    */
-  public function minifyFile($src) {
+  public function minifyFile($src, $add = TRUE) {
     $uri = $this->minfiedFileURI($src);
     $directory = dirname($uri);
     // Ensure that the minfied directory exists- required for drupal_realpath() to work.
@@ -147,7 +158,7 @@ class uglify {
 
     exec($command, $return, $status);
     if (!$status) {
-      if (empty($this->files[$src])) {
+      if (empty($this->files[$src] && $add)) {
         $this->addFile($src);
       }
       return $output_file;
@@ -158,11 +169,11 @@ class uglify {
   }
 
   /**
-   * Minify all files that are being tracked.
+   * Minify all files that are registered.
    */
-  public function minifyFiles($force = FALSE) {
+  public function minifyFiles() {
     foreach ($this->files as $item) {
-      $this->minifyFile($item['src'], $force);
+      $this->minifyFile($item['src']);
     }
   }
 
@@ -205,11 +216,13 @@ class uglify {
    *   Path to the minified file to delete.
    */
   public function deleteMinified($uri) {
-    file_unmanaged_delete($uri);
+    if (file_exists($uri)){
+      file_unmanaged_delete($uri);
+    }
   }
 
   /**
-   * Purge a file from the minfied files and the internal data store.
+   * Purge a file from the registry.
    *
    * @param mixed $item
    *   Registered file uri.
@@ -230,6 +243,7 @@ class uglify {
     foreach ($this->files as $item) {
       $this->purgeFile($item);
     }
+    file_unmanaged_delete_recursive(variable_get('uglify_output_directory', 'public://uglifyjs/'));
   }
 
   /**
