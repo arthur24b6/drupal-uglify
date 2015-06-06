@@ -29,6 +29,7 @@ before_script:
   # navigate out of module directory to prevent blown stack by recursive module lookup
   - cd ../..
   - pwd
+  - ls -la
 
   # create new site, stubbing sendmail path with true to prevent delivery errors and manually resolving drush path
   - mysql -e 'create database uglify'
@@ -38,7 +39,7 @@ before_script:
   # - ln -s $(readlink -e $(cd -)) drupal-uglify/drupal/sites/all/modules/uglify
   - ln -s drupal-uglify drupal/sites/all/modules/uglify
   - cd drupal-uglify/drupal
-  - drush --yes pm-enable uglify
+  - drush -y pm-enable uglify
 
   # start a web server on port 8080, run in the background; wait for initialization
   - drush runserver 127.0.0.1:8080 &
