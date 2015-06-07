@@ -37,7 +37,7 @@ before_script:
   - cp -r drupal-uglify drupal/sites/all/modules/uglify
   - cd drupal
   - drush -y en uglify
-  - ls -la sites/default
+  - mkdir sites/default/files/uglifyjs
   - chmod -R 777 sites/default/files
 
   # start a web server on port 8080, run in the background; wait for initialization
