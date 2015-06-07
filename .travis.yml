@@ -34,7 +34,7 @@ before_script:
   # create new site, stubbing sendmail path with true to prevent delivery errors and manually resolving drush path
   - mysql -e 'create database uglify'
   - php -d sendmail_path=`which true` ~/.composer/vendor/bin/drush.php --yes core-quick-drupal --profile=testing --no-server --db-url=mysql://root:@127.0.0.1/uglify --enable=simpletest
-
+  - ls -la
   # reference and enable travis_ci_drupal_module_example in build site
   # - ln -s $(readlink -e $(cd -)) drupal-uglify/drupal/sites/all/modules/uglify
   - ln -s drupal-uglify drupal/sites/all/modules/uglify
