@@ -27,7 +27,7 @@ install:
 
 before_script:
   # navigate out of module directory to prevent blown stack by recursive module lookup
-  - cd ../..
+  - cd ..
   - pwd
   - ls -la
 
@@ -39,7 +39,7 @@ before_script:
   # - ln -s $(readlink -e $(cd -)) drupal-uglify/drupal/sites/all/modules/uglify
   - ln -s drupal-uglify drupal/sites/all/modules/uglify
   - cd drupal-uglify/drupal
-  - drush -y pm-enable uglify
+  - drush -y en uglify
 
   # start a web server on port 8080, run in the background; wait for initialization
   - drush runserver 127.0.0.1:8080 &
