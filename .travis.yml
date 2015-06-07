@@ -38,7 +38,6 @@ before_script:
   - cd drupal
   - drush -y en uglify
   - ls -la sites/default
-  - mkdir sites/default/files
   - chmod -R 777 sites/default/files
 
   # start a web server on port 8080, run in the background; wait for initialization
