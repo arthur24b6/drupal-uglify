@@ -1,4 +1,5 @@
 # Uglify JS Minification
+![Build status](https://travis-ci.org/arthur24b6/drupal-uglify.svg?branch=master "Build status")
 
 ## About
 
