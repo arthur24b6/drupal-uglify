@@ -158,7 +158,7 @@ class uglify {
 
     exec($command, $return, $status);
     if (!$status) {
-      if (empty($this->files[$src] && $add)) {
+      if (empty($this->files[$src]) && $add) {
         $this->addFile($src);
       }
       return $output_file;
